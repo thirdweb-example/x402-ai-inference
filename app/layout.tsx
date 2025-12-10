@@ -11,9 +11,9 @@ import { SignInButton } from "../components/sign-in-button";
 import Image from "next/image";
 
 export const metadata: Metadata = {
-  title: "Reasoning Preview",
+  title: "thirdwebx402 AI Inference",
   description:
-    "This is a preview of using reasoning models with Next.js and the AI SDK.",
+    "This is a preview of using x402 AI Inference with Next.js and the AI SDK.",
 };
 
 export default function RootLayout({
