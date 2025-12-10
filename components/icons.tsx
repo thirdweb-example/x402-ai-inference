@@ -200,3 +200,21 @@ export const UncheckedSquare = ({ size = 16 }: { size?: number }) => {
     </svg>
   );
 };
+
+export const TrashIcon = ({ size = 16 }: { size?: number }) => {
+  return (
+    <svg
+      height={size}
+      viewBox="0 0 16 16"
+      width={size}
+      style={{ color: "currentcolor" }}
+    >
+      <path
+        fillRule="evenodd"
+        clipRule="evenodd"
+        d="M6 2V1H10V2H13.5V3.5H12.5V13.5C12.5 14.3284 11.8284 15 11 15H5C4.17157 15 3.5 14.3284 3.5 13.5V3.5H2.5V2H6ZM5 3.5V13.5H11V3.5H5ZM6.5 5.5H8V12H6.5V5.5ZM9.5 5.5H11V12H9.5V5.5Z"
+        fill="currentColor"
+      />
+    </svg>
+  );
+};

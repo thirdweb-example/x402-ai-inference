@@ -11,6 +11,7 @@ import {
   ArrowUpIcon,
   ChevronDownIcon,
   StopIcon,
+  TrashIcon,
 } from "./icons";
 import { Input } from "./input";
 import { DefaultChatTransport } from "ai";
@@ -36,6 +37,7 @@ export function Chat() {
 function ChatInner(props: { wallet: Wallet }) {
   const [input, setInput] = useState<string>("");
   const [selectedModelId, setSelectedModelId] = useState<modelID>("gpt-5.1");
+  const [sessionId, setSessionId] = useState<string>(() => crypto.randomUUID());
 
   const fetchWithPayment = wrapFetchWithPayment(
     fetch,
@@ -46,8 +48,8 @@ function ChatInner(props: { wallet: Wallet }) {
     fetch: fetchWithPayment,
   });
 
-  const { messages, sendMessage, status, stop } = useChat({
-    id: "primary",
+  const { messages, sendMessage, status, stop, setMessages } = useChat({
+    id: sessionId,
     transport,
     onError: (error) => {
       try {
@@ -72,6 +74,12 @@ function ChatInner(props: { wallet: Wallet }) {
   });
 
   const isGeneratingResponse = ["streaming", "submitted"].includes(status);
+
+  const handleClearChat = () => {
+    setMessages([]);
+    setSessionId(crypto.randomUUID());
+    setInput("");
+  };
 
   return (
     <div
@@ -114,6 +122,7 @@ function ChatInner(props: { wallet: Wallet }) {
                 {
                   body: {
                     selectedModelId,
+                    sessionId,
                   },
                 }
               );
@@ -122,6 +131,16 @@ function ChatInner(props: { wallet: Wallet }) {
           />
 
           <div className="absolute bottom-2.5 right-2.5 flex flex-row gap-2">
+            {messages.length > 0 && (
+              <button
+                className="text-sm p-1.5 rounded-lg flex flex-row items-center gap-1 dark:hover:bg-zinc-700 hover:bg-zinc-200 cursor-pointer text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 transition-colors"
+                onClick={handleClearChat}
+                title="Clear chat"
+              >
+                <TrashIcon size={14} />
+                <span className="text-xs">Clear</span>
+              </button>
+            )}
             <div className="relative w-fit text-sm p-1.5 rounded-lg flex flex-row items-center gap-0.5 dark:hover:bg-zinc-700 hover:bg-zinc-200 cursor-pointer">
               {/* <div>
                 {selectedModel ? selectedModel.name : "Models Unavailable!"}
@@ -167,6 +186,7 @@ function ChatInner(props: { wallet: Wallet }) {
                     {
                       body: {
                         selectedModelId,
+                        sessionId,
                       },
                     }
                   );

@@ -23,14 +23,48 @@ const asset = {
   address: paymentToken.address as `0x${string}`,
 };
 
+// In-memory cache for session payment data
+// Maps sessionId to payment data string
+const paymentCache = new Map<string, string>();
+
 export async function POST(request: NextRequest) {
-  const paymentData = request.headers.get("x-payment");
+  // Parse request body to extract sessionId and other data
+  const {
+    messages,
+    selectedModelId,
+    sessionId,
+  }: {
+    messages: Array<UIMessage>;
+    selectedModelId: modelID;
+    sessionId?: string;
+  } = await request.json();
+
+  // Check if we have cached payment data for this session
+  let paymentData: string | null = null;
+  
+  if (sessionId && paymentCache.has(sessionId)) {
+    // Use cached payment data for existing session
+    paymentData = paymentCache.get(sessionId)!;
+    console.log(`Using cached payment data for session: ${sessionId}`);
+  } else {
+    // New session or no sessionId - get payment from header
+    paymentData = request.headers.get("x-payment");
+    
+    // Cache the payment data if we have a sessionId
+    if (sessionId && paymentData) {
+      paymentCache.set(sessionId, paymentData);
+      console.log(`Cached payment data for new session: ${sessionId}`);
+    }
+  }
 
   const paymentArgs: PaymentArgs = {
     facilitator: twFacilitator,
     method: "POST",
     network: arbitrum,
     scheme: "upto",
+    routeConfig: {
+      maxTimeoutSeconds: 86400, // 24 hours in seconds 
+    },
     price: {
       amount: (PRICE_PER_INFERENCE_TOKEN_WEI * MAX_INFERENCE_TOKENS_PER_CALL).toString(),
       asset,
@@ -50,13 +84,7 @@ export async function POST(request: NextRequest) {
   }
 
   // then, process the chat request and do the inference
-  const {
-    messages,
-    selectedModelId,
-  }: {
-    messages: Array<UIMessage>;
-    selectedModelId: modelID;
-  } = await request.json();
+
 
   const stream = streamText({
     system: "You are a helpful assistant.",
