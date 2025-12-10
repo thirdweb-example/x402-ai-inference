@@ -36,7 +36,7 @@ This template demonstrates a complete pay-per-token flow:
 
 1. **Payment Verification** (`verifyPayment`)
 
-   - User signs payment authorization with maximum amount
+   - User signs payment authorization with maximum amount once
    - Server verifies signature before processing request
    - Prevents unauthorized inference calls
 
