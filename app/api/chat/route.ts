@@ -57,20 +57,20 @@ export async function POST(request: NextRequest) {
     }
   }
 
-  const paymentArgs: PaymentArgs = {
+  const verifyPaymentArgs: PaymentArgs = {
     facilitator: twFacilitator,
     method: "POST",
     network: arbitrum,
     scheme: "upto",
     routeConfig: {
-      maxTimeoutSeconds: 86400, // 24 hours in seconds 
+      maxTimeoutSeconds: 86400, // the payment signature is valid for 24 hours in seconds 
     },
     price: {
       amount: (PRICE_PER_INFERENCE_TOKEN_WEI * MAX_INFERENCE_TOKENS_PER_CALL).toString(),  // equivalent to 0.1 USDC
       asset,
     },
     minPrice: {
-      amount: MIN_REMAINING_ALLOWANCE_WEI.toString(),  // equivalent to 0.095 USDC
+      amount: MIN_REMAINING_ALLOWANCE_WEI.toString(),  // minimum allowance limit before asking for new payment signature equivalent to 0.095 USDC
       asset,
     },
     resourceUrl: request.url,
@@ -78,7 +78,7 @@ export async function POST(request: NextRequest) {
   }
 
   // verify the signed payment data with maximum payment amount before doing any work
-  const result = await verifyPayment(paymentArgs);
+  const result = await verifyPayment(verifyPaymentArgs);
 
   if (result.status !== 200) {
     return Response.json(result.responseBody, {
@@ -87,7 +87,7 @@ export async function POST(request: NextRequest) {
     });
   }
 
-  console.log(`Payment allowance after verifyPayment: ${result.allowance}`);
+ // console.log(`Payment allowance after verifyPayment: ${JSON.stringify(result)}`);
 
   // then, process the chat request and do the inference
   const stream = streamText({
@@ -126,7 +126,7 @@ export async function POST(request: NextRequest) {
           maxTimeoutSeconds: 86400, // 24 hours in seconds 
         },
         price: {
-          amount:finalPrice.toString(),  // equivalent to 0.1 USDC
+          amount:finalPrice.toString(),  // actual price of the inference tokens used
           asset,
         },
         resourceUrl: request.url,

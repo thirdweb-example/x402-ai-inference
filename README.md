@@ -36,13 +36,36 @@ This template demonstrates a complete pay-per-token flow:
 
 1. **Payment Verification** (`verifyPayment`)
 
-   - User signs payment authorization with maximum amount once
+   - User signs payment authorization with both a maximum amount (0.1 USDC) and this signature can be reused up to 24 hours and as long remaining allowance doesn't dip below 0.095 USDC
+
+   ```typescript
+    const verifyPaymentArgs: PaymentArgs = {
+    facilitator: twFacilitator,
+    method: "POST",
+    network: arbitrum,
+    scheme: "upto",
+    routeConfig: {
+      maxTimeoutSeconds: 86400, // the payment signature is valid for 24 hours in seconds 
+    },
+    price: {
+      amount: (PRICE_PER_INFERENCE_TOKEN_WEI * MAX_INFERENCE_TOKENS_PER_CALL).toString(),  // equivalent to 0.1 USDC
+      asset,
+    },
+    minPrice: {
+      amount: MIN_REMAINING_ALLOWANCE_WEI.toString(),  // minimum allowance limit before asking for new payment signature equivalent to 0.095 USDC
+      asset,
+    },
+    resourceUrl: request.url,
+    paymentData,
+  }
+  ```
+
    - Server verifies signature before processing request
    - Prevents unauthorized inference calls
 
 2. **AI Inference** (`streamText`)
 
-   - Process chat request and stream AI response to user
+   - Process chat request and stream AI response to user using session ID's
    - Non-blocking payment flow ensures optimal UX
    - Extract token usage via `onFinish` callback
 
