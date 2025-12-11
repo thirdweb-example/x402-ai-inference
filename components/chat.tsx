@@ -3,7 +3,7 @@
 import cn from "classnames";
 import { toast } from "sonner";
 import { useChat } from "@ai-sdk/react";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Messages } from "./messages";
 import { modelID, models } from "@/lib/models";
 import { Footnote } from "./footnote";
@@ -46,14 +46,18 @@ function ChatInner(props: { wallet: Wallet }) {
     }
   }, [sessionId]);
 
-  const fetchWithPayment = wrapFetchWithPayment(
-    fetch,
-    client,
-    props.wallet
-  ) as typeof globalThis.fetch;
-  const transport = new DefaultChatTransport({
-    fetch: fetchWithPayment,
-  });
+  // Memoize fetchWithPayment and transport to avoid recreating on every render
+  const transport = useMemo(() => {
+    const fetchWithPayment = wrapFetchWithPayment(
+      fetch,
+      client,
+      props.wallet
+    ) as typeof globalThis.fetch;
+    
+    return new DefaultChatTransport({
+      fetch: fetchWithPayment,
+    });
+  }, [props.wallet]);
 
   const { messages, sendMessage, status, stop, setMessages } = useChat({
     id: sessionId || "initializing",
