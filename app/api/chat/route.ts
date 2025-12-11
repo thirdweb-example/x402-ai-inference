@@ -12,7 +12,7 @@ import {
   serverClient,
   serverWalletAddress,
 } from "../../../lib/thirdweb.server";
-import { MAX_INFERENCE_TOKENS_PER_CALL, paymentToken, PRICE_PER_INFERENCE_TOKEN_WEI } from "../../../lib/constants";
+import { MAX_INFERENCE_TOKENS_PER_CALL, MIN_REMAINING_ALLOWANCE_WEI, paymentToken, PRICE_PER_INFERENCE_TOKEN_WEI } from "../../../lib/constants";
 
 const twFacilitator = facilitator({
   client: serverClient,
@@ -66,7 +66,11 @@ export async function POST(request: NextRequest) {
       maxTimeoutSeconds: 86400, // 24 hours in seconds 
     },
     price: {
-      amount: (PRICE_PER_INFERENCE_TOKEN_WEI * MAX_INFERENCE_TOKENS_PER_CALL).toString(),
+      amount: (PRICE_PER_INFERENCE_TOKEN_WEI * MAX_INFERENCE_TOKENS_PER_CALL).toString(),  // equivalent to 0.1 USDC
+      asset,
+    },
+    minPrice: {
+      amount: MIN_REMAINING_ALLOWANCE_WEI.toString(),  // equivalent to 0.095 USDC
       asset,
     },
     resourceUrl: request.url,
@@ -83,9 +87,9 @@ export async function POST(request: NextRequest) {
     });
   }
 
+  console.log(`Payment allowance after verifyPayment: ${result.allowance}`);
+
   // then, process the chat request and do the inference
-
-
   const stream = streamText({
     system: "You are a helpful assistant.",
     providerOptions: {
@@ -113,16 +117,28 @@ export async function POST(request: NextRequest) {
 
       const finalPrice = PRICE_PER_INFERENCE_TOKEN_WEI * totalTokens;
 
+      const settlePaymentArgs: PaymentArgs = {
+        facilitator: twFacilitator,
+        method: "POST",
+        network: arbitrum,
+        scheme: "upto",
+        routeConfig: {
+          maxTimeoutSeconds: 86400, // 24 hours in seconds 
+        },
+        price: {
+          amount:finalPrice.toString(),  // equivalent to 0.1 USDC
+          asset,
+        },
+        resourceUrl: request.url,
+        paymentData,
+      }
+
       // finally, settle the payment asynchronously after the stream is completed
       try {
-        const result = await settlePayment({
-          ...paymentArgs,
-          price: {
-            amount: finalPrice.toString(),
-            asset,
-          },
+        const settleResult = await settlePayment({
+          ...settlePaymentArgs
         });
-        console.log(`Payment result: ${JSON.stringify(result)}`);
+        console.log(`Payment result after settlePayment: ${JSON.stringify(settleResult)}`);
       } catch (error) {
         console.error("Payment settlement failed:", error);
       }

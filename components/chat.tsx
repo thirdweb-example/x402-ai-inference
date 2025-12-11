@@ -3,7 +3,7 @@
 import cn from "classnames";
 import { toast } from "sonner";
 import { useChat } from "@ai-sdk/react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Messages } from "./messages";
 import { modelID, models } from "@/lib/models";
 import { Footnote } from "./footnote";
@@ -37,7 +37,14 @@ export function Chat() {
 function ChatInner(props: { wallet: Wallet }) {
   const [input, setInput] = useState<string>("");
   const [selectedModelId, setSelectedModelId] = useState<modelID>("gpt-5.1");
-  const [sessionId, setSessionId] = useState<string>(() => crypto.randomUUID());
+  const [sessionId, setSessionId] = useState<string>("");
+
+  // Generate session ID on client side only to avoid hydration issues
+  useEffect(() => {
+    if (!sessionId) {
+      setSessionId(crypto.randomUUID());
+    }
+  }, [sessionId]);
 
   const fetchWithPayment = wrapFetchWithPayment(
     fetch,
@@ -49,7 +56,7 @@ function ChatInner(props: { wallet: Wallet }) {
   });
 
   const { messages, sendMessage, status, stop, setMessages } = useChat({
-    id: sessionId,
+    id: sessionId || "initializing",
     transport,
     onError: (error) => {
       try {
@@ -114,7 +121,7 @@ function ChatInner(props: { wallet: Wallet }) {
             isGeneratingResponse={isGeneratingResponse}
             isReasoningEnabled={true}
             onSubmit={() => {
-              if (input === "") {
+              if (input === "" || !sessionId) {
                 return;
               }
               sendMessage(
@@ -170,11 +177,11 @@ function ChatInner(props: { wallet: Wallet }) {
                 "size-8 flex flex-row justify-center items-center dark:bg-zinc-100 bg-zinc-900 dark:text-zinc-900 text-zinc-100 p-1.5 rounded-full hover:bg-zinc-800 dark:hover:bg-zinc-300 hover:scale-105 active:scale-95 transition-all",
                 {
                   "dark:bg-zinc-200 dark:text-zinc-500":
-                    isGeneratingResponse || input === "",
+                    isGeneratingResponse || input === "" || !sessionId,
                 }
               )}
               onClick={() => {
-                if (input === "") {
+                if (input === "" || !sessionId) {
                   return;
                 }
 
